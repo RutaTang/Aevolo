@@ -9,5 +9,5 @@ class EvolutionInfoABC[EI](ABC):
 
 class EvolverABC[C, F, EI](ABC):
     @abstractmethod
-    def evolve(self) -> EvolutionInfoABC[EI]:
+    def evolve(self,*args,**kwargs) -> EvolutionInfoABC[EI]:
         pass

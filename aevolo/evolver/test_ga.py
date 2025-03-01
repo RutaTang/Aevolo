@@ -1,3 +1,4 @@
+import logging
 import random
 from typing import List
 from unittest import TestCase
@@ -6,12 +7,10 @@ from aevolo.crossover.abc import CrossoverABC
 from aevolo.evolver.ga import GABuilder
 from aevolo.individual.abc import IndividualABC
 from aevolo.generation.abc import GenerationABC
-from aevolo.generation.basic import BasicGeneration
 from aevolo.mutator.abc import MutatorABC
 from aevolo.selector.abc import SelectorABC
 
 
-# TODO: finish test
 class TestGAEvolver(TestCase):
     def test_evolve(self):
         class MyIndividual(IndividualABC):
@@ -19,7 +18,6 @@ class TestGAEvolver(TestCase):
                 super().__init__()
                 self.chromosome = []
                 self.fitness = 0
-                self.construct()
 
             def construct(self):
                 self.chromosome = [random.randint(1, 9) for _ in range(3)]
@@ -81,17 +79,44 @@ class TestGAEvolver(TestCase):
             def get_rate(self) -> float:
                 return 0.3
 
+        class MyGeneration(GenerationABC):
+            def __init__(self):
+                super().__init__()
+                self.population = []
+
+            def lazy_init(self, n: int) -> 'MyGeneration':
+                self.population = [MyIndividual() for _ in range(n)]
+                for individual in self.population:
+                    individual.construct()
+                return self
+
+            def get_best_individual(self) -> MyIndividual:
+                return max(self.population, key=lambda x: x.get_fitness())
+
+            def get_best_individual_fitness(self) -> float:
+                return self.get_best_individual().get_fitness()
+
+            def get_population(self) -> List[MyIndividual]:
+                return self.population
+
+            def set_population(self, population: List[MyIndividual]):
+                self.population = population
+
+        random.seed(0)
+        population_n = 10
+        generations_n = 10
         ga_builder = GABuilder()
-        ga_builder.set_individual_cls(MyIndividual)
-        ga_builder.set_generation_cls(BasicGeneration)
-        ga_builder.set_population_n(10)
-        ga_builder.set_generations_n(10)
+        ga_builder.set_initial_generation(MyGeneration())
+        ga_builder.set_population_n(population_n)
+        ga_builder.set_generations_n(generations_n)
         ga_builder.set_selector(MySelector())
         ga_builder.set_crossover(MyCrossover())
         ga_builder.set_mutator(MyMutator())
+        ga_builder.set_logger(logger=logging.getLogger(f"{__name__}_test_temp"))
         ga = ga_builder.build()
-        info = ga.evolve()
-        print(info.initial_info)
-        print(info.generations_info)
-        print(info.final_info)
-        print(info.get_info())
+        ei = ga.evolve()
+        self.assertEqual(ei.initial_info['population_n'], population_n)
+        self.assertEqual(ei.initial_info['generations_n'], generations_n)
+        self.assertEqual(len(ei.generations_info), generations_n + 1)  # +1 since initial generation is included
+        self.assertEqual(ei.final_info['best_individual'], [8, 9, 9])
+        self.assertEqual(ei.final_info['best_fitness'], 26)

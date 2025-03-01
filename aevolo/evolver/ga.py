@@ -41,8 +41,7 @@ class GAEvolver[C, F, EI](EvolverABC):
     """
 
     def __init__(self,
-                 individual_cls: Optional[Type[IndividualABC[C, F]]],
-                 generation_cls: Optional[Type[GenerationABC[C, F]]],
+                 initial_generation: Optional[GenerationABC[C, F]] = None,
                  population_n: int = 0,
                  generations_n: int = 0,
                  selector: Optional[SelectorABC[C, F]] = None,
@@ -50,8 +49,7 @@ class GAEvolver[C, F, EI](EvolverABC):
                  crossover: Optional[CrossoverABC[C, F]] = None,
                  logger: Optional[Logger] = None
                  ):
-        self.individual_cls: Optional[Type[IndividualABC[C, F]]] = individual_cls
-        self.generation_cls: Optional[Type[GenerationABC[C, F]]] = generation_cls
+        self.initial_generation = initial_generation
         # defaults
         self.population_n: int = population_n
         self.generations_n: int = generations_n
@@ -65,8 +63,7 @@ class GAEvolver[C, F, EI](EvolverABC):
         self.logger = logger
 
     def check_params(self):
-        assert self.individual_cls is not None
-        assert self.generation_cls is not None
+        assert self.initial_generation is not None
         assert self.population_n > 0
         assert self.generations_n > 0
         assert self.selector is not None
@@ -74,12 +71,14 @@ class GAEvolver[C, F, EI](EvolverABC):
         assert self.crossover is not None
 
     def evolve(self) -> GAEvolutionInfoABC[EI]:
+        """
+        Start evolve
+        :return:
+        """
         # check params
         self.check_params()
         # record initial info
         self.evolve_info.record_initial_info(
-            invididual_cls=str(self.individual_cls),
-            generation_cls=str(self.generation_cls),
             population_n=self.population_n,
             generations_n=self.generations_n,
             selector=str(self.selector),
@@ -96,10 +95,7 @@ class GAEvolver[C, F, EI](EvolverABC):
         Mutation Rate: {self.mutator.get_rate()}
         """.strip()))
         # initialize first generation
-        population = []
-        for _ in range(self.population_n):
-            population.append(self.individual_cls())
-        generation = self.generation_cls(population)
+        generation = self.initial_generation.lazy_init(self.population_n)
         # track the best individual
         self.best_individual = generation.get_best_individual()
         self.best_fitness = self.best_individual.get_fitness()
@@ -125,7 +121,8 @@ class GAEvolver[C, F, EI](EvolverABC):
             # mutate
             mutated_population = self.mutator.mutate(population=crossed_population)
             # make it as the new generation
-            generation = self.generation_cls(mutated_population)
+            generation = deepcopy(generation)
+            generation.set_population(mutated_population)
             # track the best individual
             best_individual = generation.get_best_individual()
             best_fitness = best_individual.get_fitness()
@@ -174,8 +171,7 @@ class GABuilder:
     """
 
     def __init__(self):
-        self.individual_cls = None
-        self.generation_cls = None
+        self.initial_generation = None
         self.population_n = 0
         self.generations_n = 0
         self.selector = None
@@ -183,12 +179,8 @@ class GABuilder:
         self.crossover = None
         self.logger = None
 
-    def set_individual_cls(self, individual_cls: Type[IndividualABC]) -> 'GABuilder':
-        self.individual_cls = individual_cls
-        return self
-
-    def set_generation_cls(self, generation_cls: Type[GenerationABC]) -> 'GABuilder':
-        self.generation_cls = generation_cls
+    def set_initial_generation(self, initial_generation: GenerationABC) -> 'GABuilder':
+        self.initial_generation = initial_generation
         return self
 
     def set_population_n(self, population_n: int) -> 'GABuilder':
@@ -217,8 +209,7 @@ class GABuilder:
 
     def build(self) -> GAEvolver:
         return GAEvolver(
-            individual_cls=self.individual_cls,
-            generation_cls=self.generation_cls,
+            initial_generation=self.initial_generation,
             population_n=self.population_n,
             generations_n=self.generations_n,
             selector=self.selector,

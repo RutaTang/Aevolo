@@ -6,7 +6,7 @@ from aevolo.individual.abc import IndividualABC
 
 class GenerationABC[C, F](ABC):
     @abstractmethod
-    def __init__(self, population: List[IndividualABC[C, F]]):
+    def lazy_init(self, n: int) -> 'GenerationABC[C, F]':
         pass
 
     @abstractmethod
@@ -22,13 +22,14 @@ class GenerationABC[C, F](ABC):
         pass
 
     @abstractmethod
+    def set_population(self, population: List[IndividualABC[C, F]]):
+        pass
+
     def get_population_chromosomes(self) -> List[C]:
-        pass
+        return [individual.get_chromosome() for individual in self.get_population()]
 
-    @abstractmethod
     def get_population_fitness(self) -> List[F]:
-        pass
+        return [individual.get_fitness() for individual in self.get_population()]
 
-    @abstractmethod
     def get_population_size(self) -> int:
-        pass
+        return len(self.get_population())
