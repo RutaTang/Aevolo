@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aevolo"
-version = "0.1.1"
+version = "0.2.1"
 authors = [
     { name = "Ruta", email = "rutatangpersonal@gmail.com" },
 ]
@@ -21,3 +21,8 @@ keywords = ["evolutionary-algorithm"]
 #]
 dependencies = [
 ]
+
+[project.urls]
+Homepage = "https://github.com/RutaTang/Aevolo"
+Source = "https://github.com/RutaTang/Aevolo"
+Issues = "https://github.com/RutaTang/Aevolo/issues"

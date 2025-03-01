@@ -8,4 +8,4 @@ build:
 upload:
     #!/usr/bin/env bash
     source .venv/bin/activate
-    python -m twine upload dist/*
+    python -m twine upload --skip-existing dist/*
